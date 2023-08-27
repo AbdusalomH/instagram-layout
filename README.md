@@ -5,4 +5,4 @@ Implemented layout of Search section of Instagram app
 
 | App navigation        |
 |-----------------------|
-| ![](insta-layout.png) |
+| ![](insta-layout.jpg) |
