@@ -3,6 +3,6 @@ Instagram layout
 
 Implemented layout of Search section of Instagram app
 
-| App screen            | Navigation      |
-|-----------------------|-----------------|
-| ![](layout2.png)      | layout-inst.gif |
+| App screen            | Navigation           |
+|-----------------------|----------------------|
+| ![](inst-l1.png)      | ![](layout-inst.gif) |
