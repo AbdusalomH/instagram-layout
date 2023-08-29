@@ -2,7 +2,7 @@
 Instagram layout 
 
 Implemented layout of Search section of Instagram app
-| Navigation           |
+| Pagination           |
 |----------------------|
 | ![](layout-inst.gif) |
 
