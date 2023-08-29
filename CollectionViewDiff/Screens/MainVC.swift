@@ -12,9 +12,13 @@ class MainVC: UIViewController {
     
     var myArray: [Photo] = []
     
+    var pageNumber = 1
+    
     
     var index1 = 5
     var index2 = 6
+    
+    
     
     
     lazy var collectionView: UICollectionView = {
@@ -37,14 +41,33 @@ class MainVC: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .white
         setupView()
+        configureSearch()
+        getPhoto(page: String(pageNumber))
+        navigationController?.navigationBar.prefersLargeTitles = false
+    }
+    
+    
+    
+    func getPhoto(page: String) {
         
-        NetworkManager.shared.makePexelsRequest { results in
-            switch results {
+        showLoading()
+        
+        NetworkManager.shared.makePexelsRequest(page: page) { [weak self] result in
+            guard let self = self else {return}
+            
+            self.stopAnimation()
+            switch result {
             case .success(let data):
-                self.myArray = data.photos
+                
+                for i in data.photos {
+                    if !self.myArray.contains(i) {
+                        self.myArray.append(i)
+                    }
+                }
+                
                 DispatchQueue.main.async {
+                    self.updateData(photos: self.myArray)
                     self.configureDataSource(with: self.myArray)
-                    self.collectionView.reloadData()
                 }
             case .failure(let error):
                 print(error)
@@ -52,28 +75,48 @@ class MainVC: UIViewController {
         }
     }
     
-    override func viewDidLayoutSubviews() {
-        collectionView.reloadData()
+    
+    func configureSearch() {
+        let searchBar = UISearchController()
+        searchBar.searchBar.placeholder = "Search"
+        navigationItem.searchController = searchBar
     }
 
     
     
     func setupView() {
-        view.addSubview(collectionView)
         
+        view.addSubview(collectionView)
         NSLayoutConstraint.activate([
-            
             collectionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            collectionView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
     }
+    
+    
+    
+    func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        
+        let offsetY = scrollView.contentOffset.y
+        let contentHeight = scrollView.contentSize.height
+        let height = scrollView.frame.height
+
+        
+        if offsetY > contentHeight - height {
+
+            pageNumber += 1
+            getPhoto(page: String(pageNumber))
+            
+        }
+    }
+
+   
     
     func createFlowlayout() -> UICollectionViewCompositionalLayout {
         
         let width = view.frame.width / 3
-        
         let height = view.frame.height / 3.5
         
         
@@ -123,11 +166,9 @@ class MainVC: UIViewController {
             if indexPath.item == self.index1 {
                 cell.setupText(text: self.myArray[indexPath.row].src.portrait ?? "")
                 self.index1 += 10
-                print(self.index1)
             } else if indexPath.item == self.index2 {
                 cell.setupText(text: self.self.myArray[indexPath.row].src.portrait ?? "")
                 self.index2 += 10
-                print(self.index2)
             } else {
                 cell.setupText(text: self.myArray[indexPath.row].src.medium ?? "")
             }
@@ -135,10 +176,17 @@ class MainVC: UIViewController {
         })
 
         
+
+    }
+    
+    func updateData(photos: [Photo]) {
+        
         var snapshot = NSDiffableDataSourceSnapshot<Section, Photo>()
         snapshot.appendSections([.main])
-        snapshot.appendItems(photo)
-        dataSource.apply(snapshot, animatingDifferences: true)
+        snapshot.appendItems(photos)
+        DispatchQueue.main.async {
+            self.dataSource.apply(snapshot, animatingDifferences: true)
+        }
     }
 }
 
@@ -147,11 +195,8 @@ extension MainVC: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
-        
         let number = myArray[indexPath.row]
-        
         let vc = DetailsVC(imageName: number.src.portrait ?? "")
-        
         navigationController?.pushViewController(vc, animated: true)
     }
 }
@@ -163,13 +208,15 @@ class NetworkManager {
     static let shared = NetworkManager()
     
     
-    func makePexelsRequest(completion: @escaping (Result<PhotoModel, Error>) -> Void) {
+    func makePexelsRequest(page: String, completion: @escaping (Result<PhotoModel, Error>) -> Void) {
         
-        let urlString = "https://api.pexels.com/v1/curated?page=2&per_page=80"
+        //let urlString = "https://api.pexels.com/v1/curated?page=1&per_page=80"
         let apiKey = "zW9FssWnr4GvHAC3pI1i4dLp2uhWXNTUkBnADoQVTVoXE5opbj5f7Lp5"
         
+        let urlConfigure = "https://api.pexels.com/v1/curated?page=\(page)&per_page=80"
         
-        guard let url = URL(string: urlString) else {return}
+        
+        guard let url = URL(string: urlConfigure) else {return}
         
         
         var request = URLRequest(url: url)
@@ -199,6 +246,8 @@ class NetworkManager {
         task.resume()
     }
 }
+
+
 
 
 
