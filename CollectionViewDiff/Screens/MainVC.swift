@@ -11,13 +11,12 @@ class MainVC: UIViewController {
     
     
     var myArray: [Photo] = []
+    var filteredArray: [Photo] = []
     
     var pageNumber = 1
     
-    
     var index1 = 5
     var index2 = 6
-    
     
     
     
@@ -45,7 +44,6 @@ class MainVC: UIViewController {
         getPhoto(page: String(pageNumber))
         navigationController?.navigationBar.prefersLargeTitles = false
     }
-    
     
     
     func getPhoto(page: String) {
@@ -78,8 +76,10 @@ class MainVC: UIViewController {
     
     func configureSearch() {
         let searchBar = UISearchController()
-        searchBar.searchBar.placeholder = "Search"
-        navigationItem.searchController = searchBar
+        searchBar.searchBar.placeholder  = "Search"
+        searchBar.searchResultsUpdater   = self
+        searchBar.searchBar.delegate     = self
+        navigationItem.searchController  = searchBar
     }
 
     
@@ -96,7 +96,6 @@ class MainVC: UIViewController {
     }
     
     
-    
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
         
         let offsetY = scrollView.contentOffset.y
@@ -105,15 +104,12 @@ class MainVC: UIViewController {
 
         
         if offsetY > contentHeight - height {
-
             pageNumber += 1
             getPhoto(page: String(pageNumber))
             
         }
     }
 
-   
-    
     func createFlowlayout() -> UICollectionViewCompositionalLayout {
         
         let width = view.frame.width / 3
@@ -148,7 +144,6 @@ class MainVC: UIViewController {
 
         
         let section = NSCollectionLayoutSection(group: horizontalGroup)
-
         let layout = UICollectionViewCompositionalLayout(section: section)
 
         return layout
@@ -174,9 +169,6 @@ class MainVC: UIViewController {
             }
             return cell
         })
-
-        
-
     }
     
     func updateData(photos: [Photo]) {
@@ -194,61 +186,17 @@ class MainVC: UIViewController {
 extension MainVC: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        
         let number = myArray[indexPath.row]
         let vc = DetailsVC(imageName: number.src.portrait ?? "")
         navigationController?.pushViewController(vc, animated: true)
     }
 }
 
-
-
-class NetworkManager {
+extension MainVC: UISearchResultsUpdating, UISearchBarDelegate {
     
-    static let shared = NetworkManager()
-    
-    
-    func makePexelsRequest(page: String, completion: @escaping (Result<PhotoModel, Error>) -> Void) {
+    func updateSearchResults(for searchController: UISearchController) {
         
-        //let urlString = "https://api.pexels.com/v1/curated?page=1&per_page=80"
-        let apiKey = "zW9FssWnr4GvHAC3pI1i4dLp2uhWXNTUkBnADoQVTVoXE5opbj5f7Lp5"
+        guard let filter = searchController.searchBar.text, !filter.isEmpty else { return }
         
-        let urlConfigure = "https://api.pexels.com/v1/curated?page=\(page)&per_page=80"
-        
-        
-        guard let url = URL(string: urlConfigure) else {return}
-        
-        
-        var request = URLRequest(url: url)
-        
-        request.httpMethod = "GET"
-        request.allHTTPHeaderFields = ["Authorization" : apiKey]
-        
-        let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            
-            
-            if let error = error {
-                print("error \(error)")
-            }
-            
-            guard let data = data else {return}
-            
-            do {
-                let decoder = JSONDecoder()
-                let serverData = try decoder.decode(PhotoModel.self, from: data)
-                completion(.success(serverData))
-                
-            } catch let error {
-                completion(.failure(error))
-                print(error)
-            }
-        }
-        task.resume()
     }
 }
-
-
-
-
-
-
